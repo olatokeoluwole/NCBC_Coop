@@ -1,0 +1,162 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isBootstrappedAdmin() {
+      return request.auth != null && request.auth.token.email == 'olatokeoluwole@gmail.com';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isBootstrappedAdmin() || 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // -- Users --
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'name', 'role']) &&
+             data.size() == 3 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.role in ['admin', 'standard'];
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if existing().email == request.auth.token.email || isOwner(userId) || isAdmin();
+      
+      allow create: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
+        (isOwner(userId) && (incoming().role == 'standard' || isBootstrappedAdmin())) ||
+        isAdmin()
+      );
+      
+      allow update: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['role', 'name'])) ||
+          (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['name']) && incoming().role == existing().role)
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // -- Pre Registered Users --
+    function isValidPreRegistered(data) {
+      return data.keys().hasAll(['email', 'name', 'role']) &&
+             data.size() == 3 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.role in ['admin', 'standard'];
+    }
+
+    match /pre_registered/{docId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidPreRegistered(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // -- Ledger Helpers --
+    function isValidLedger(entry) {
+      return entry.keys().hasAll(['dr', 'cr']) &&
+             entry.size() == 2 &&
+             entry.dr is number && entry.cr is number;
+    }
+
+    // -- Transactions --
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'amount', 'particulars', 'ref', 'saving', 'shares', 'loans', 'loanInterest', 'createdAt']) &&
+             data.size() == 9 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.amount is number &&
+             data.particulars is string && data.particulars.size() <= 300 &&
+             data.ref is string && data.ref.size() <= 100 &&
+             isValidLedger(data.saving) &&
+             isValidLedger(data.shares) &&
+             isValidLedger(data.loans) &&
+             isValidLedger(data.loanInterest) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidTransactionUpdate(data) {
+      return data.keys().hasAll(['userId', 'amount', 'particulars', 'ref', 'saving', 'shares', 'loans', 'loanInterest', 'createdAt']) &&
+             data.size() == 9 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.amount is number &&
+             data.particulars is string && data.particulars.size() <= 300 &&
+             data.ref is string && data.ref.size() <= 100 &&
+             isValidLedger(data.saving) &&
+             isValidLedger(data.shares) &&
+             isValidLedger(data.loans) &&
+             isValidLedger(data.loanInterest) &&
+             data.createdAt is timestamp;
+    }
+
+    match /transactions/{transactionId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && isValidId(transactionId) && isValidTransaction(incoming()) && isAdmin() &&
+                    exists(/databases/$(database)/documents/users/$(incoming().userId));
+
+      allow update: if isSignedIn() && isValidId(transactionId) && isValidTransactionUpdate(incoming()) && isAdmin() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'particulars', 'ref', 'saving', 'shares', 'loans', 'loanInterest'])
+      ) && incoming().userId == existing().userId && incoming().createdAt == existing().createdAt;
+
+      allow delete: if isAdmin();
+    }
+
+    // -- Receipts --
+    function isValidReceipt(data) {
+      return data.keys().hasAll(['userId', 'fileData', 'fileName', 'status', 'createdAt']) &&
+             data.size() == 5 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.fileData is string && data.fileData.size() <= 1048487 && // max 1MB Base64 string
+             data.fileName is string && data.fileName.size() <= 300 &&
+             data.status in ['pending', 'seen', 'approved', 'rejected'] &&
+             data.createdAt == request.time;
+    }
+
+    function isValidReceiptUpdate(data) {
+      return data.keys().hasAll(['userId', 'fileData', 'fileName', 'status', 'createdAt']) &&
+             data.size() == 5 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.fileData is string && data.fileData.size() <= 1048487 &&
+             data.fileName is string && data.fileName.size() <= 300 &&
+             data.status in ['pending', 'seen', 'approved', 'rejected'] &&
+             data.createdAt is timestamp;
+    }
+
+    match /receipts/{receiptId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && isValidId(receiptId) && isValidReceipt(incoming()) && (
+        (incoming().userId == request.auth.uid) || isAdmin()
+      ) && exists(/databases/$(database)/documents/users/$(incoming().userId));
+
+      allow update: if isSignedIn() && isValidId(receiptId) && isValidReceiptUpdate(incoming()) && isAdmin() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      ) && incoming().userId == existing().userId && incoming().fileData == existing().fileData && incoming().createdAt == existing().createdAt;
+
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A cooperative society member or admin",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "standard"] }
+      },
+      "required": ["email", "name", "role"]
+    },
+    "LedgerEntry": {
+      "title": "LedgerEntry",
+      "type": "object",
+      "properties": {
+        "dr": { "type": "number" },
+        "cr": { "type": "number" }
+      },
+      "required": ["dr", "cr"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A detailed ledger transaction",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "particulars": { "type": "string" },
+        "ref": { "type": "string" },
+        "saving": { "$ref": "#/entities/LedgerEntry" },
+        "shares": { "$ref": "#/entities/LedgerEntry" },
+        "loans": { "$ref": "#/entities/LedgerEntry" },
+        "loanInterest": { "$ref": "#/entities/LedgerEntry" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "particulars", "ref", "saving", "shares", "loans", "loanInterest", "createdAt"]
+    },
+    "Receipt": {
+      "title": "Receipt",
+      "description": "User uploaded receipt",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fileData": { "type": "string" },
+        "fileName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fileData", "fileName", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles and roles"
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Society transactions ledger"
+    },
+    "/receipts/{receiptId}": {
+      "schema": { "$ref": "#/entities/Receipt" },
+      "description": "Uploaded receipts pending approval"
+    }
+  }
+}
