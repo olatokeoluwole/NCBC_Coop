@@ -7,6 +7,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/authContext';
 import { AuthPage } from './pages/Auth';
+import { TermsOfUse } from './pages/TermsOfUse';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { Dashboard } from './pages/Dashboard';
 import { Transactions } from './pages/Transactions';
 import { UsersPage } from './pages/Users';
@@ -33,6 +35,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/terms" element={<TermsOfUse />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route
             path="/"
             element={

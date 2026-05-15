@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../lib/authContext';
 import { signIn, auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
 
 export const AuthPage = () => {
@@ -209,6 +209,11 @@ export const AuthPage = () => {
             </svg>
             Google
           </button>
+          
+          <p className="text-xs text-center text-gray-500 mt-6 leading-relaxed">
+            By creating an account or logging in, you agree to our <br/>
+            <Link to="/terms" className="text-blue-600 hover:underline">Terms of Use</Link> and <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+          </p>
         </div>
       </div>
     </div>
