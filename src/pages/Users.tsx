@@ -78,7 +78,7 @@ export const UsersPage = () => {
   };
 
   const handleRoleChange = async (userId: string, newRole: string, isPending: boolean, email: string) => {
-    if (email === 'olatokeoluwole@gmail.com') {
+    if (email === 'olatokeoluwole@gmail.com' || email === 'wolefalana@hotmail.com') {
         alert('Cannot change the role of the master admin.');
         return;
     }
@@ -95,7 +95,7 @@ export const UsersPage = () => {
   };
 
   const handleDelete = async (userId: string, isPending: boolean, email: string) => {
-    if (email === 'olatokeoluwole@gmail.com') {
+    if (email === 'olatokeoluwole@gmail.com' || email === 'wolefalana@hotmail.com') {
         alert('Cannot delete the master admin.');
         return;
     }
@@ -221,7 +221,7 @@ export const UsersPage = () => {
                 <td className="px-6 py-4">
                   <select
                     value={u.role}
-                    disabled={u.email === 'olatokeoluwole@gmail.com'}
+                    disabled={u.email === 'olatokeoluwole@gmail.com' || u.email === 'wolefalana@hotmail.com'}
                     onChange={(e) => handleRoleChange(u.id, e.target.value, !!u.isPending, u.email)}
                     className="rounded text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 font-medium bg-gray-50 py-1 px-2 border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -232,7 +232,7 @@ export const UsersPage = () => {
                 <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => handleDelete(u.id, !!u.isPending, u.email)}
-                    disabled={u.email === 'olatokeoluwole@gmail.com'}
+                    disabled={u.email === 'olatokeoluwole@gmail.com' || u.email === 'wolefalana@hotmail.com'}
                     className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete User"
                   >

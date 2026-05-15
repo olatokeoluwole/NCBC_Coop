@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfile(docSnap.data() as UserProfile);
           } else {
             // Allow the super admin bootstrap
-            if (firebaseUser.email === 'olatokeoluwole@gmail.com') {
+            if (firebaseUser.email === 'olatokeoluwole@gmail.com' || firebaseUser.email === 'wolefalana@hotmail.com') {
               const newProfile: UserProfile = {
                 email: firebaseUser.email || '',
                 name: firebaseUser.displayName || 'Admin User',
